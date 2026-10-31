@@ -1,0 +1,19 @@
+statsd:
+  address: telegraf-statsd:8125
+  namespace: unifi.
+  tags: []
+unifi:
+  url: https://192.168.1.1
+  site: default
+  # Prefer an API key (UniFi OS > Control Plane > Integrations). Can be set via UNIFI_API_KEY.
+  apiKey: ""
+  # Fallback local-account login; set via UNIFI_USERNAME / UNIFI_PASSWORD.
+  username: ""
+  password: ""
+  insecureSkipVerify: true
+  pollInterval: 30s
+  timeout: 10s
+snmpTraps:
+  enabled: false
+  listenAddress: 0.0.0.0:1162
+  community: ""   # or SNMP_TRAP_COMMUNITY

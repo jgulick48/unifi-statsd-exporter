@@ -1,0 +1,39 @@
+{
+  "meta": {"rc": "ok"},
+  "data": [
+    {
+      "mac": "aa:bb:cc:00:00:01", "name": "UDM-SE", "model": "UDMPROSE", "type": "udm",
+      "state": 1, "adopted": true,
+      "total_max_power": 180, "total_used_power": "35.5",
+      "port_table": [
+        {"port_idx": 1, "name": "Port 1", "up": true, "port_poe": false},
+        {"port_idx": 2, "name": "AP Office", "up": true, "port_poe": true, "poe_enable": true, "poe_good": "true",
+         "poe_mode": "auto", "poe_class": "Class 4", "poe_power": "3.52", "poe_voltage": "52.10", "poe_current": "67.5"},
+        {"port_idx": 3, "name": "Camera", "up": false, "port_poe": true, "poe_enable": 1, "poe_good": false,
+         "poe_mode": "auto", "poe_power": "0.00", "poe_voltage": "0.00", "poe_current": "0.00"}
+      ]
+    },
+    {
+      "mac": "aa:bb:cc:00:00:02", "name": "", "model": "USL8LP", "type": "usw",
+      "state": 1, "adopted": true,
+      "total_max_power": 52,
+      "port_table": [
+        {"port_idx": 1, "up": true, "port_poe": true, "poe_enable": true, "poe_good": true,
+         "poe_mode": "auto", "poe_class": "Class 3", "poe_power": 7.8, "poe_voltage": 52.3, "poe_current": 150}
+      ]
+    },
+    {
+      "mac": "aa:bb:cc:00:00:03", "name": "Rack PDU", "model": "USPPDUP", "type": "usp",
+      "state": 0, "adopted": true,
+      "outlet_ac_power_consumption": "120.5", "outlet_ac_power_budget": 1440,
+      "outlet_table": [
+        {"index": 1, "name": "Outlet 1", "relay_state": true, "outlet_power": "60.2", "outlet_voltage": "120.1", "outlet_current": "0.50", "outlet_power_factor": "0.98"},
+        {"index": 2, "name": "Outlet 2", "relay_state": 0}
+      ]
+    },
+    {
+      "mac": "aa:bb:cc:00:00:04", "name": "Pending", "model": "U7PG2", "type": "uap",
+      "state": 2, "adopted": false
+    }
+  ]
+}

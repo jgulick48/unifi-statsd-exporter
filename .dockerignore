@@ -1,0 +1,6 @@
+.git
+bin/
+.claude/
+*.md
+config.yaml
+cover.out
