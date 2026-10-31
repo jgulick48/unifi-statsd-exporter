@@ -137,6 +137,35 @@ func TestSwitch(t *testing.T) {
 	}
 }
 
+func TestPortConnection(t *testing.T) {
+	f := &fakeClient{}
+	d := unifi.Device{Name: "sw", Ports: []unifi.PoEPort{
+		{Index: 1, Connected: "AP, Office", ConnectedType: "device"},
+		{Index: 2, Connected: "10 clients", ConnectedType: "multiple", ConnectedClients: 10},
+		{Index: 3},
+	}}
+	NewWithClient(f, "default").ReportDevices([]unifi.Device{d})
+
+	f.find(t, "poe.power_watts", "port:1", "connected:AP_ Office", "connected_type:device")
+	if c := f.find(t, "poe.connected_clients", "port:2", "connected_type:multiple"); c.value != 10 {
+		t.Errorf("connected_clients = %v", c.value)
+	}
+	for _, c := range f.calls {
+		for _, tg := range c.tags {
+			if tg == "port:3" {
+				for _, x := range c.tags {
+					if strings.HasPrefix(x, "connected") {
+						t.Errorf("%s: unexpected tag %q on unconnected port", c.name, x)
+					}
+				}
+			}
+		}
+	}
+	if c := f.find(t, "poe.connected_clients", "port:3"); c.value != 0 {
+		t.Errorf("port 3 connected_clients = %v", c.value)
+	}
+}
+
 func TestPDUAndTotalsFallback(t *testing.T) {
 	pdu := unifi.Device{
 		MAC: "11:22:33:44:55:66", Name: "pdu", Model: "USPPDUP", Type: "usp", Online: true,

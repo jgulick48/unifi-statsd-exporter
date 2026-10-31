@@ -42,6 +42,14 @@ type PoEPort struct {
 	PowerWatts   float64
 	VoltageVolts float64
 	CurrentAmps  float64
+
+	// Connected names what is plugged into the port: a UniFi device, a single
+	// wired client, "multiple clients", or "" when nothing is known.
+	Connected string
+	// ConnectedType is "device", "client", "multiple", "offline_device", or "".
+	ConnectedType string
+	// ConnectedClients is the number of wired clients seen on the port.
+	ConnectedClients int
 }
 
 type Outlet struct {

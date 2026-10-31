@@ -1,0 +1,125 @@
+{
+ "meta": {
+  "rc": "ok"
+ },
+ "data": [
+  {
+   "mac": "11:00:00:00:00:01",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 3,
+   "name": "Driveway Cam  ",
+   "hostname": "cam1"
+  },
+  {
+   "mac": "11:00:00:00:00:02",
+   "is_wired": true,
+   "sw_mac": "AA:BB:CC:00:00:02",
+   "sw_port": 1,
+   "hostname": "nas"
+  },
+  {
+   "mac": "11:00:00:00:00:03",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 5,
+   "name": "Laptop"
+  },
+  {
+   "mac": "11:00:00:00:00:04",
+   "is_wired": true,
+   "sw_mac": "de:ad:be:ef:00:00",
+   "sw_port": 9,
+   "name": "Elsewhere"
+  },
+  {
+   "mac": "11:00:00:00:00:05",
+   "is_wired": false,
+   "name": "Phone"
+  },
+  {
+   "mac": "11:00:00:00:00:06",
+   "is_wired": false,
+   "name": "Wireless on AP port",
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 2
+  },
+  {
+   "mac": "22:00:00:00:00:00",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 0"
+  },
+  {
+   "mac": "22:00:00:00:00:01",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 1"
+  },
+  {
+   "mac": "22:00:00:00:00:02",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 2"
+  },
+  {
+   "mac": "22:00:00:00:00:03",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 3"
+  },
+  {
+   "mac": "22:00:00:00:00:04",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 4"
+  },
+  {
+   "mac": "22:00:00:00:00:05",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 5"
+  },
+  {
+   "mac": "22:00:00:00:00:06",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 6"
+  },
+  {
+   "mac": "22:00:00:00:00:07",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 7"
+  },
+  {
+   "mac": "22:00:00:00:00:08",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 8"
+  },
+  {
+   "mac": "22:00:00:00:00:09",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": 4,
+   "name": "Host 9"
+  },
+  {
+   "mac": "22:00:00:00:00:0a",
+   "is_wired": true,
+   "sw_mac": "aa:bb:cc:00:00:01",
+   "sw_port": "4",
+   "name": "Host 10"
+  }
+ ]
+}

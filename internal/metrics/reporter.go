@@ -113,12 +113,19 @@ func (r *Reporter) ReportDevices(devices []unifi.Device) {
 			if c := sanitize(p.PoEClass); c != "" {
 				pt = append(pt, "poe_class:"+c)
 			}
+			if c := sanitize(p.Connected); c != "" {
+				pt = append(pt, "connected:"+c)
+			}
+			if c := sanitize(p.ConnectedType); c != "" {
+				pt = append(pt, "connected_type:"+c)
+			}
 			r.gauge("poe.power_watts", p.PowerWatts, pt)
 			r.gauge("poe.voltage_volts", p.VoltageVolts, pt)
 			r.gauge("poe.current_amps", p.CurrentAmps, pt)
 			r.gauge("poe.enabled", b2f(p.PoEEnabled), pt)
 			r.gauge("poe.good", b2f(p.PoEGood), pt)
 			r.gauge("port.up", b2f(p.Up), pt)
+			r.gauge("poe.connected_clients", float64(p.ConnectedClients), pt)
 		}
 		if len(d.Ports) > 0 {
 			r.gauge("device.poe.ports_active", float64(active), tags)

@@ -10,12 +10,17 @@
         {"port_idx": 2, "name": "AP Office", "up": true, "port_poe": true, "poe_enable": true, "poe_good": "true",
          "poe_mode": "auto", "poe_class": "Class 4", "poe_power": "3.52", "poe_voltage": "52.10", "poe_current": "67.5"},
         {"port_idx": 3, "name": "Camera", "up": false, "port_poe": true, "poe_enable": 1, "poe_good": false,
-         "poe_mode": "auto", "poe_power": "0.00", "poe_voltage": "0.00", "poe_current": "0.00"}
+         "poe_mode": "auto", "poe_power": "0.00", "poe_voltage": "0.00", "poe_current": "0.00"},
+        {"port_idx": 4, "name": "Rack switch", "up": true, "port_poe": true, "poe_enable": true},
+        {"port_idx": 5, "name": "Old AP and laptop", "up": true, "port_poe": true, "poe_enable": true},
+        {"port_idx": 6, "name": "Old AP alone", "up": false, "port_poe": true, "poe_enable": true},
+        {"port_idx": 7, "name": "Wireless AP port", "up": false, "port_poe": true, "poe_enable": true}
       ]
     },
     {
       "mac": "aa:bb:cc:00:00:02", "name": "", "model": "USL8LP", "type": "usw",
       "state": 1, "adopted": true,
+      "uplink": {"type": "wire", "uplink_mac": "aa:bb:cc:00:00:01", "uplink_remote_port": 8},
       "total_max_power": 52,
       "port_table": [
         {"port_idx": 1, "up": true, "port_poe": true, "poe_enable": true, "poe_good": true,
@@ -34,6 +39,26 @@
     {
       "mac": "aa:bb:cc:00:00:04", "name": "Pending", "model": "U7PG2", "type": "uap",
       "state": 2, "adopted": false
+    },
+    {
+      "mac": "aa:bb:cc:00:00:05", "name": "AP Office", "model": "U7PG2", "type": "uap",
+      "state": 1, "adopted": true,
+      "uplink": {"type": "wire", "uplink_mac": "AA:BB:CC:00:00:01", "uplink_remote_port": 2}
+    },
+    {
+      "mac": "aa:bb:cc:00:00:06", "name": "AP Old Hall", "model": "U7PG2", "type": "uap",
+      "state": 0, "adopted": true,
+      "uplink": {"type": "wire", "uplink_mac": "aa:bb:cc:00:00:01", "uplink_remote_port": "5"}
+    },
+    {
+      "mac": "aa:bb:cc:00:00:07", "name": "AP Old Garage", "model": "U7PG2", "type": "uap",
+      "state": 0, "adopted": true,
+      "uplink": {"type": "wire", "uplink_mac": "aa:bb:cc:00:00:01", "uplink_remote_port": 6}
+    },
+    {
+      "mac": "aa:bb:cc:00:00:08", "name": "AP Mesh", "model": "U7PG2", "type": "uap",
+      "state": 1, "adopted": true,
+      "uplink": {"type": "wireless", "uplink_mac": "aa:bb:cc:00:00:01"}
     }
   ]
 }

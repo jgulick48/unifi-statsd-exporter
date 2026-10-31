@@ -14,7 +14,22 @@ import (
 	"github.com/jgulick48/unifi-statsd-exporter/internal/config"
 )
 
-const statPath = "/proxy/network/api/s/default/stat/device"
+const (
+	statPath    = "/proxy/network/api/s/default/stat/device"
+	staPath     = "/proxy/network/api/s/default/stat/sta"
+	numAdopted  = 7
+	udmMAC      = "aa:bb:cc:00:00:01"
+	otherSwitch = "de:ad:be:ef:00:00"
+)
+
+func staFixture(t *testing.T) []byte {
+	t.Helper()
+	b, err := os.ReadFile("testdata/stat_sta.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
 
 func fixture(t *testing.T) []byte {
 	t.Helper()
@@ -42,11 +57,18 @@ func TestAPIKey(t *testing.T) {
 		if r.URL.Path == "/api/auth/login" {
 			atomic.AddInt32(&logins, 1)
 		}
-		if r.URL.Path != statPath || r.Header.Get("X-API-KEY") != "secret" || r.Header.Get("Accept") != "application/json" {
+		if r.Header.Get("X-API-KEY") != "secret" || r.Header.Get("Accept") != "application/json" {
 			http.Error(w, "bad", http.StatusUnauthorized)
 			return
 		}
-		w.Write(fixture(t))
+		switch r.URL.Path {
+		case statPath:
+			w.Write(fixture(t))
+		case staPath:
+			w.Write(staFixture(t))
+		default:
+			http.Error(w, "bad", http.StatusUnauthorized)
+		}
 	}))
 	defer srv.Close()
 	c := newTestClient(t, srv, func(c *config.UniFi) { c.APIKey = "secret" })
@@ -54,8 +76,14 @@ func TestAPIKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(devs) != 3 || logins != 0 {
+	if len(devs) != numAdopted || logins != 0 {
 		t.Fatalf("devs=%d logins=%d", len(devs), logins)
+	}
+	if err := c.LastClientsError(); err != nil {
+		t.Fatalf("clients error: %v", err)
+	}
+	if got := devs[0].Ports[0].Connected; got != "AP Office" {
+		t.Fatalf("connection info missing, got %q", got)
 	}
 }
 
@@ -74,10 +102,14 @@ func TestLoginCookieAndCSRF(t *testing.T) {
 			http.SetCookie(w, &http.Cookie{Name: "TOKEN", Value: "jwt", Path: "/"})
 			w.Header().Set("X-Csrf-Token", "csrf1")
 			w.Write([]byte("{}"))
-		case statPath:
+		case statPath, staPath:
 			ck, err := r.Cookie("TOKEN")
 			if err != nil || ck.Value != "jwt" || r.Header.Get("X-Csrf-Token") != "csrf1" {
 				http.Error(w, "unauth", http.StatusUnauthorized)
+				return
+			}
+			if r.URL.Path == staPath {
+				w.Write(staFixture(t))
 				return
 			}
 			w.Write(fixture(t))
@@ -88,6 +120,9 @@ func TestLoginCookieAndCSRF(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		if _, err := c.Devices(context.Background()); err != nil {
 			t.Fatal(err)
+		}
+		if err := c.LastClientsError(); err != nil {
+			t.Fatalf("clients error: %v", err)
 		}
 	}
 	if logins != 1 {
@@ -113,6 +148,11 @@ func TestReloginOn401(t *testing.T) {
 				t.Errorf("csrf = %q", r.Header.Get("X-Csrf-Token"))
 			}
 			w.Write(fixture(t))
+		case staPath:
+			if r.Header.Get("X-Csrf-Token") != "csrf2" {
+				t.Errorf("sta csrf = %q", r.Header.Get("X-Csrf-Token"))
+			}
+			w.Write(staFixture(t))
 		}
 	}))
 	defer srv.Close()
@@ -179,8 +219,8 @@ func TestMapping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(devs) != 3 {
-		t.Fatalf("got %d devices, want 3 (unadopted excluded)", len(devs))
+	if len(devs) != numAdopted {
+		t.Fatalf("got %d devices, want %d (unadopted excluded)", len(devs), numAdopted)
 	}
 
 	udm := devs[0]
@@ -193,8 +233,8 @@ func TestMapping(t *testing.T) {
 	if udm.OutletPowerWatts != nil {
 		t.Fatal("outlet power should be nil")
 	}
-	if len(udm.Ports) != 2 {
-		t.Fatalf("ports = %d, want 2 (non-PoE excluded)", len(udm.Ports))
+	if len(udm.Ports) != 6 {
+		t.Fatalf("ports = %d, want 6 (non-PoE excluded)", len(udm.Ports))
 	}
 	p := udm.Ports[0]
 	if p.Index != 2 || !p.Up || !p.PoEEnabled || !p.PoEGood || p.PoEClass != "Class 4" || p.PoEMode != "auto" ||
@@ -250,5 +290,96 @@ func TestFlexTypes(t *testing.T) {
 	}
 	if !v.F.Val || !v.G.Val || v.H.Val || !v.H.Set || v.I.Val || v.J.Set {
 		t.Fatalf("bools: %+v", v)
+	}
+}
+
+func TestConnections(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case statPath:
+			w.Write(fixture(t))
+		case staPath:
+			w.Write(staFixture(t))
+		}
+	}))
+	defer srv.Close()
+	c := newTestClient(t, srv, func(c *config.UniFi) { c.APIKey = "k" })
+	devs, err := c.Devices(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	udm, usw := devs[0], devs[1]
+
+	cases := []struct {
+		name    string
+		port    PoEPort
+		want    string
+		wantTyp string
+		clients int
+	}{
+		{"online AP wins, wireless client ignored", udm.Ports[0], "AP Office", "device", 0},
+		{"single client, name trimmed", udm.Ports[1], "Driveway Cam", "client", 1},
+		{"many clients behind unmanaged switch", udm.Ports[2], "multiple clients", "multiple", 11},
+		{"client beats offline AP", udm.Ports[3], "Laptop", "client", 1},
+		{"offline AP alone", udm.Ports[4], "AP Old Garage (offline)", "offline_device", 0},
+		{"wireless uplink ignored", udm.Ports[5], "", "", 0},
+		{"switch MAC case-insensitive, hostname fallback", usw.Ports[0], "nas", "client", 1},
+	}
+	for _, tc := range cases {
+		if tc.port.Connected != tc.want || tc.port.ConnectedType != tc.wantTyp || tc.port.ConnectedClients != tc.clients {
+			t.Errorf("%s: port %d = %q/%q/%d, want %q/%q/%d", tc.name, tc.port.Index,
+				tc.port.Connected, tc.port.ConnectedType, tc.port.ConnectedClients, tc.want, tc.wantTyp, tc.clients)
+		}
+	}
+}
+
+func TestClientsFailureKeepsDevices(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == staPath {
+			http.Error(w, "boom", http.StatusInternalServerError)
+			return
+		}
+		w.Write(fixture(t))
+	}))
+	defer srv.Close()
+	c := newTestClient(t, srv, func(c *config.UniFi) { c.APIKey = "k" })
+	devs, err := c.Devices(context.Background())
+	if err != nil {
+		t.Fatalf("devices must not fail: %v", err)
+	}
+	if len(devs) != numAdopted {
+		t.Fatalf("devices = %d", len(devs))
+	}
+	if c.LastClientsError() == nil {
+		t.Fatal("expected LastClientsError")
+	}
+	for _, p := range devs[0].Ports {
+		if p.Connected != "" || p.ConnectedType != "" || p.ConnectedClients != 0 {
+			t.Fatalf("port %d annotated despite failure: %+v", p.Index, p)
+		}
+	}
+}
+
+func TestAnnotateDeterministicAndEdgeCases(t *testing.T) {
+	raws := []rawDevice{
+		{MAC: "b", Name: "Zeta", State: flexFloat{1, true}, Uplink: rawUplink{"wire", udmMAC, flexFloat{1, true}}},
+		{MAC: "c", Name: "Alpha", State: flexFloat{1, true}, Uplink: rawUplink{"wire", udmMAC, flexFloat{1, true}}},
+		{MAC: "d", Name: "", State: flexFloat{0, true}, Uplink: rawUplink{"wire", udmMAC, flexFloat{2, true}}},
+	}
+	clients := []rawClient{
+		{MAC: "m1", IsWired: flexBool{true, true}, SwMAC: otherSwitch, SwPort: flexFloat{1, true}},
+		{MAC: "m2", Name: " ", Hostname: "", IsWired: flexBool{true, true}, SwMAC: udmMAC, SwPort: flexFloat{3, true}},
+	}
+	devs := []Device{{MAC: udmMAC, Ports: []PoEPort{{Index: 1}, {Index: 2}, {Index: 3}}}}
+	annotateConnections(raws, clients, devs)
+	got := devs[0].Ports
+	if got[0].Connected != "Alpha" || got[0].ConnectedType != "device" {
+		t.Errorf("port 1: %+v", got[0])
+	}
+	if got[1].Connected != "d (offline)" || got[1].ConnectedType != "offline_device" {
+		t.Errorf("port 2: %+v", got[1])
+	}
+	if got[2].Connected != "m2" || got[2].ConnectedType != "client" {
+		t.Errorf("port 3: %+v", got[2])
 	}
 }

@@ -118,7 +118,7 @@ type rawResponse struct {
 		RC  string `json:"rc"`
 		Msg string `json:"msg"`
 	} `json:"meta"`
-	Data []rawDevice `json:"data"`
+	Data json.RawMessage `json:"data"`
 }
 
 type rawDevice struct {
@@ -135,8 +135,36 @@ type rawDevice struct {
 	OutletACPower  flexFloat `json:"outlet_ac_power_consumption"`
 	OutletACBudget flexFloat `json:"outlet_ac_power_budget"`
 
+	Uplink rawUplink `json:"uplink"`
+
 	PortTable   []rawPort   `json:"port_table"`
 	OutletTable []rawOutlet `json:"outlet_table"`
+}
+
+type rawUplink struct {
+	Type             string    `json:"type"`
+	UplinkMAC        string    `json:"uplink_mac"`
+	UplinkRemotePort flexFloat `json:"uplink_remote_port"`
+}
+
+// rawClient is one currently connected client from stat/sta.
+type rawClient struct {
+	MAC      string    `json:"mac"`
+	Name     string    `json:"name"`
+	Hostname string    `json:"hostname"`
+	IsWired  flexBool  `json:"is_wired"`
+	SwMAC    string    `json:"sw_mac"`
+	SwPort   flexFloat `json:"sw_port"`
+}
+
+// displayName prefers the user alias, then the hostname, then the MAC.
+func (c rawClient) displayName() string {
+	for _, s := range []string{c.Name, c.Hostname, c.MAC} {
+		if s = strings.TrimSpace(s); s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 type rawPort struct {

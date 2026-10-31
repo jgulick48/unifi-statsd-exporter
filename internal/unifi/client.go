@@ -23,9 +23,10 @@ type Client struct {
 	base string
 	http *http.Client
 
-	mu        sync.Mutex
-	loggedIn  bool
-	csrfToken string
+	mu         sync.Mutex
+	loggedIn   bool
+	csrfToken  string
+	clientsErr error
 }
 
 // NewClient builds a client from configuration. It does not contact the console.
@@ -61,45 +62,84 @@ func NewClient(cfg config.UniFi) (*Client, error) {
 	}, nil
 }
 
-// Devices fetches all adopted devices on the configured site.
+// Devices fetches all adopted devices on the configured site and annotates
+// their PoE ports with what is connected. Connection info comes from a second
+// request for the connected clients; if that fails the devices are returned
+// without it and the error is available from LastClientsError.
 func (c *Client) Devices(ctx context.Context) ([]Device, error) {
-	path := "/proxy/network/api/s/" + url.PathEscape(c.cfg.Site) + "/stat/device"
-
-	if c.cfg.APIKey == "" {
-		if err := c.ensureLogin(ctx); err != nil {
-			return nil, err
-		}
-	}
-	body, status, err := c.get(ctx, path)
-	if err != nil {
+	var raws []rawDevice
+	if err := c.fetch(ctx, c.sitePath("stat/device"), &raws); err != nil {
 		return nil, err
 	}
-	if status == http.StatusUnauthorized && c.cfg.APIKey == "" {
-		if err := c.login(ctx); err != nil {
-			return nil, err
-		}
-		body, status, err = c.get(ctx, path)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if status < 200 || status > 299 {
-		return nil, fmt.Errorf("unifi: GET %s: unexpected status %d", path, status)
-	}
-	var resp rawResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("unifi: decoding device response: %w", err)
-	}
-	if resp.Meta.RC != "ok" {
-		return nil, fmt.Errorf("unifi: api error: rc=%q msg=%q", resp.Meta.RC, resp.Meta.Msg)
-	}
-	devices := make([]Device, 0, len(resp.Data))
-	for _, r := range resp.Data {
+	devices := make([]Device, 0, len(raws))
+	for _, r := range raws {
 		if d, ok := r.toDevice(); ok {
 			devices = append(devices, d)
 		}
 	}
+
+	var clients []rawClient
+	err := c.fetch(ctx, c.sitePath("stat/sta"), &clients)
+	c.mu.Lock()
+	c.clientsErr = err
+	c.mu.Unlock()
+	if err == nil {
+		annotateConnections(raws, clients, devices)
+	}
 	return devices, nil
+}
+
+// LastClientsError returns the error from the most recent client list
+// request, or nil if it succeeded. Failures do not fail Devices.
+func (c *Client) LastClientsError() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.clientsErr
+}
+
+func (c *Client) sitePath(endpoint string) string {
+	return "/proxy/network/api/s/" + url.PathEscape(c.cfg.Site) + "/" + endpoint
+}
+
+// fetch GETs path, logging in and retrying once on a 401 when using
+// username/password auth, checks the response envelope and decodes its data
+// array into out.
+func (c *Client) fetch(ctx context.Context, path string, out any) error {
+	if c.cfg.APIKey == "" {
+		if err := c.ensureLogin(ctx); err != nil {
+			return err
+		}
+	}
+	body, status, err := c.get(ctx, path)
+	if err != nil {
+		return err
+	}
+	if status == http.StatusUnauthorized && c.cfg.APIKey == "" {
+		if err := c.login(ctx); err != nil {
+			return err
+		}
+		body, status, err = c.get(ctx, path)
+		if err != nil {
+			return err
+		}
+	}
+	if status < 200 || status > 299 {
+		return fmt.Errorf("unifi: GET %s: unexpected status %d", path, status)
+	}
+	var resp rawResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return fmt.Errorf("unifi: decoding response from %s: %w", path, err)
+	}
+	if resp.Meta.RC != "ok" {
+		return fmt.Errorf("unifi: api error: rc=%q msg=%q", resp.Meta.RC, resp.Meta.Msg)
+	}
+	if len(resp.Data) == 0 {
+		return nil
+	}
+	if err := json.Unmarshal(resp.Data, out); err != nil {
+		return fmt.Errorf("unifi: decoding data from %s: %w", path, err)
+	}
+	return nil
 }
 
 func (c *Client) ensureLogin(ctx context.Context) error {

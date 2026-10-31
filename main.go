@@ -87,5 +87,8 @@ func poll(ctx context.Context, client *unifi.Client, reporter *metrics.Reporter)
 		}
 		return
 	}
+	if err := client.LastClientsError(); err != nil {
+		log.Printf("polling clients (ports reported without connection info): %v", err)
+	}
 	reporter.ReportDevices(devices)
 }

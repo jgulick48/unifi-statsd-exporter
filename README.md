@@ -34,8 +34,9 @@ device metric is tagged `site`, `device`, `mac`, `model`, `device_type`.
 | `device.poe.budget_watts`, `device.poe.used_watts` | | switches / UDM |
 | `device.poe.ports_active` | | ports delivering PoE |
 | `device.outlet.power_watts`, `device.outlet.budget_watts` | | PDUs |
-| `poe.power_watts`, `poe.voltage_volts`, `poe.current_amps` | `port`, `port_name`, `poe_mode`, `poe_class` | PoE-capable ports only |
+| `poe.power_watts`, `poe.voltage_volts`, `poe.current_amps` | `port`, `port_name`, `poe_mode`, `poe_class`, `connected`, `connected_type` | PoE-capable ports only |
 | `poe.enabled`, `poe.good`, `port.up` | same | 1/0 |
+| `poe.connected_clients` | same | wired clients seen on the port |
 | `pdu.outlet.power_watts`, `pdu.outlet.voltage_volts`, `pdu.outlet.current_amps`, `pdu.outlet.power_factor` | `outlet`, `outlet_name` | metered outlets only |
 | `pdu.outlet.relay_on` | same | 1/0 |
 | `site.poe.used_watts`, `site.outlet.power_watts`, `site.devices` | `site` only | totals |
